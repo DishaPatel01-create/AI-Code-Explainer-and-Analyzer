@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Code Explainer - Analyze</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Additional inline styles for better display */
+        .analyze-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .input-section {
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            padding: 1.5rem;
+        }
+        .response-section {
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .code-input-wrapper textarea {
+            width: 100%;
+            height: 400px;
+            padding: 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+            background: #f8fafc;
+            transition: border-color 0.3s;
+        }
+        .code-input-wrapper textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+        .input-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .language-select {
+            flex: 1;
+            min-width: 150px;
+        }
+        .language-select label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
+            color: #475569;
+        }
+        .language-select select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            background: #f8fafc;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-end;
+        }
+        #responseContainer {
+            flex: 1;
+            min-height: 400px;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+        #loadingSpinner {
+            text-align: center;
+            padding: 2rem;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 1rem;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .empty-state {
+            text-align: center;
+            color: #94a3b8;
+            padding: 3rem 1rem;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #6366f1;
+            color: #ffffff;
+        }
+        .btn-primary:hover {
+            background: #4f46e5;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #1e293b;
+        }
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+        .explanation-content {
+            line-height: 1.8;
+        }
+        .explanation-content h3 {
+            color: #0f172a;
+            margin: 1.5rem 0 0.5rem;
+        }
+        .explanation-content ul {
+            list-style: disc;
+            padding-left: 1.5rem;
+            margin: 0.5rem 0;
+        }
+        .explanation-content li {
+            margin-bottom: 0.25rem;
+        }
+        .explanation-content strong {
+            color: #0f172a;
+        }
+        @media (max-width: 768px) {
+            .analyze-container {
+                grid-template-columns: 1fr;
+            }
+            .code-input-wrapper textarea {
+                height: 250px;
+            }
+            #responseContainer {
+                min-height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-code" style="color: #6366f1;"></i>
+                <span>AI Code Explainer</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="/"><i class="fas fa-home"></i> Home</a></li>
+                <li><a href="/analyze" class="active"><i class="fas fa-robot"></i> Analyze</a></li>
+                <li><a href="/about"><i class="fas fa-info-circle"></i> About</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Analyze Section -->
+    <section class="analyze-section" style="padding: 2rem 0 4rem;">
+        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+            <div class="analyze-header" style="text-align: center; margin-bottom: 2rem;">
+                <h1 style="font-size: 2.25rem; font-weight: 800; color: #0f172a;">
+                    <i class="fas fa-code" style="color: #6366f1;"></i> Code Analyzer
+                </h1>
+                <p style="color: #64748b; font-size: 1.125rem;">Paste your code below and let AI explain it in simple terms</p>
+            </div>
+
+            <div class="analyze-container">
+                <!-- Left Column: Code Input -->
+                <div class="input-section">
+                    <div class="input-controls">
+                        <div class="language-select">
+                            <label for="language"><i class="fas fa-language"></i> Language</label>
+                            <select id="language">
+                                <option value="python">Python</option>
+                                <option value="java">Java</option>
+                                <option value="c">C</option>
+                                <option value="cpp">C++</option>
+                                <option value="javascript">JavaScript</option>
+                                <option value="php">PHP</option>
+                                <option value="html">HTML</option>
+                                <option value="css">CSS</option>
+                                <option value="sql">SQL</option>
+                            </select>
+                        </div>
+                        <div class="action-buttons">
+                            <button id="explainBtn" class="btn btn-primary">
+                                <i class="fas fa-robot"></i> Explain Code
+                            </button>
+                            <button id="clearBtn" class="btn btn-secondary">
+                                <i class="fas fa-eraser"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="code-input-wrapper">
+                        <textarea id="codeInput" placeholder="Paste your code here..." spellcheck="false"></textarea>
+                    </div>
+                </div>
+
+                <!-- Right Column: Response -->
+                <div class="response-section">
+                    <div class="response-header" style="margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0;">
+                        <h3 style="font-size: 1.125rem; color: #0f172a;">
+                            <i class="fas fa-lightbulb" style="color: #f59e0b;"></i> Explanation
+                        </h3>
+                    </div>
+                    <div id="responseContainer">
+                        <div class="empty-state">
+                            <i class="fas fa-robot" style="font-size: 48px; color: #94a3b8;"></i>
+                            <p>Your code explanation will appear here</p>
+                            <p style="font-size: 0.875rem; margin-top: 0.5rem;">Select a language, paste your code, and click "Explain Code"</p>
+                        </div>
+                    </div>
+                    <!-- Loading Spinner -->
+                    <div id="loadingSpinner" style="display: none;">
+                        <div class="spinner"></div>
+                        <p style="color: #6366f1;">AI is analyzing your code...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer" style="background: #0f172a; color: #94a3b8; padding: 3rem 0 2rem; margin-top: auto;">
+        <div class="container" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+            <div class="footer-content" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem;">
+                <div class="footer-section">
+                    <h3 style="color: #f8fafc; margin-bottom: 1rem; font-size: 1.125rem;">
+                        <i class="fas fa-code" style="color: #6366f1;"></i> AI Code Explainer
+                    </h3>
+                    <p style="line-height: 1.6; font-size: 0.9rem;">Making code understandable for everyone using AI technology.</p>
+                </div>
+                <div class="footer-section">
+                    <h4 style="color: #f8fafc; margin-bottom: 1rem; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;">Quick Links</h4>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="margin-bottom: 0.5rem;"><a href="/" style="color: #94a3b8; text-decoration: none; font-size: 0.9rem;">Home</a></li>
+                        <li style="margin-bottom: 0.5rem;"><a href="/analyze" style="color: #94a3b8; text-decoration: none; font-size: 0.9rem;">Analyze</a></li>
+                        <li style="margin-bottom: 0.5rem;"><a href="/about" style="color: #94a3b8; text-decoration: none; font-size: 0.9rem;">About</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4 style="color: #f8fafc; margin-bottom: 1rem; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;">Tech Stack</h4>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="margin-bottom: 0.5rem; font-size: 0.9rem;">Flask</li>
+                        <li style="margin-bottom: 0.5rem; font-size: 0.9rem;">Google Gemini AI</li>
+                        <li style="margin-bottom: 0.5rem; font-size: 0.9rem;">HTML, CSS, JS</li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4 style="color: #f8fafc; margin-bottom: 1rem; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;">Internship Project</h4>
+                    <p style="line-height: 1.6; font-size: 0.9rem;">Built with ❤️ for college internship portfolio</p>
+                    <p style="line-height: 1.6; font-size: 0.9rem;">&copy; 2026 AI Code Explainer</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
